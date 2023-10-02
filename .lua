@@ -1,5 +1,4 @@
 --[[
-   ill add silent aim / Bullet Tracker soon
    The name Bullet Tracker is inspired by PUBG Mobile cheats
    I love Cheating!!
 ]]
@@ -7,6 +6,71 @@
 local OrionLib = loadstring(game:HttpGet("https://pastebin.com/raw/NMEHkVTb"))()
 
 local Window = OrionLib:MakeWindow({Name = "VIP Turtle Hub V3", HidePremium = false, SaveConfig = true, ConfigFolder = "TurtleFi"})
+
+local Tracking = false
+
+if getgenv().ResetMetatableNamecall then
+    getgenv().ResetMetatableNamecall()
+end
+
+local Workspace = game:GetService("Workspace")
+local PlayerService = game:GetService("Players")
+
+local Player = PlayerService.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local HumanoidRootPart = Character.HumanoidRootPart
+
+local ZombieStorage = Workspace:WaitForChild("Zombie Storage")
+
+local function GetClosestZombie() [nonamecall]
+    local MagnitudeDistance = math.huge
+    local ClosestZombie
+    local Magnitude
+
+    for _, Zombie in pairs(ZombieStorage:GetChildren()) do
+        if Zombie:FindFirstChild("HumanoidRootPart") and Zombie:FindFirstChild("Humanoid") then
+            if Zombie.Humanoid.Health > 0 then
+                Magnitude = (HumanoidRootPart.Position - Zombie.HumanoidRootPart.Position).Magnitude
+                if Magnitude < MagnitudeDistance then
+                    MagnitudeDistance = Magnitude
+                    ClosestZombie = Zombie
+                end
+            end
+        end
+    end
+    return ClosestZombie
+end
+
+    local Metatable = getrawmetatable(game)
+    local OldNamecall = Metatable.__namecall
+
+    setreadonly(Metatable, false)
+
+    Metatable.__namecall = newcclosure(function(self, ...) --[nonamecall]
+        local Arguments = {...}
+        if not checkcaller() and getnamecallmethod() == 'FireServer' and self.Name == 'WeaponEvent' and Tracking == true then
+            if Character:FindFirstChildWhichIsA("Tool") then
+                local ClosestZombie = GetClosestZombie()
+                local Weapon = Character:FindFirstChildWhichIsA("Tool")
+                if ClosestZombie and ClosestZombie:FindFirstChild("Humanoid") and Weapon then
+                    Arguments[1]["HumanoidTables"] = {
+                        [1] = {
+                            ["HeadHits"] = 9e9,
+                            ["THumanoid"] = GetClosestZombie().Humanoid,
+                            ["BodyHits"] = 0
+                        }
+                    }
+                end
+            end
+        end
+
+        return OldNamecall(self, unpack(Arguments))
+    end)
+    
+    getgenv().ResetMetatableNamecall = function()
+        Metatable.__namecall = OldNamecall
+        setreadonly(Metatable, true)
+    end
 
 local T1 = Window:MakeTab({
 Name = "Main",
@@ -25,6 +89,13 @@ Name = "Misc",
 Icon = "rbxassetid://",
 PremiumOnly = false
 })
+
+T1:AddToggle({
+Name = "Bullet Tracker",
+Default = false,
+Callback = function(Value)
+Tracking = Value
+end})
 
 T1:AddToggle({
 Name = "Kill All Zombie V1",
